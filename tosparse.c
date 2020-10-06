@@ -29,6 +29,7 @@ int main() {
 			}
 			if (B[x][y] != 0){
 				
+				
 				nnz++;
 
 			}
@@ -38,16 +39,28 @@ int main() {
 	pos[n] = nnz;
 	int b_crd[nnz];
 	int vals[nnz];
+	
+	int coo_row[nnz];
+	int coo_col[nnz];
+
 
 	for (int x = 0 ; x < n; x++) {
 
 		for (int y=0; y<m; y++){
 			
 			if (B[x][y] != 0) { 
-
+				
+				//CSR representation
 				vals[idx] = B[x][y];
 				b_crd[idx] = y;
 				
+				//COO representation
+				coo_row[idx] = x;
+				//for COO col array, we can use the same b_crd from CSR
+				//(since here we are maintaing order for NNZ values in
+				//COO, while it's not required)
+
+					
 				idx++;
 			}
 	
@@ -88,7 +101,7 @@ int main() {
 		printf("\n");
 	}
 	
-
+	printf("CSR representation: \n");
 	printf("B_pos:[");
 	for (int i=0; i < n+1; i++){
 		if (i == n){
@@ -107,6 +120,36 @@ int main() {
 		}
 	}
 
+
+	printf("vals:[");
+	for (int i=0; i<nnz; i++){
+		if (i == nnz-1){
+			printf("%d]\n", vals[i]);
+		}else {
+			printf("%d, ", vals[i]);
+		}
+	}
+
+	printf("==========================\n");
+	printf("COO representation: \n");
+	printf("row_idx:[");
+	for (int i = 0 ; i < nnz; i++) {
+		if (i == nnz-1){
+			printf("%d]\n", coo_row[i]);
+
+		}else { 
+			printf("%d, " , coo_row[i]);
+		}
+	}
+
+	printf("col_idx:[");
+	for (int i = 0; i < nnz; i++){
+		if (i == nnz-1){
+			printf("%d]\n", b_crd[i]);
+		}else {
+			printf("%d, ", b_crd[i]);
+		}
+	}
 
 	printf("vals:[");
 	for (int i=0; i<nnz; i++){
