@@ -7,6 +7,17 @@
 #define k 2
 #define lower 0
 #define upper 100
+
+//Tuples for LIL format
+//each row is a list of tuple
+//each tuple contains the column index
+//and the value 
+typedef struct tuple{
+	int col;
+	int val;
+
+};
+
 int main() {
 
 	srand(time(0));
@@ -16,6 +27,11 @@ int main() {
 	int A[n][k] = {0};
 	int nnz = 0;
 	int idx = 0; 
+	
+	//Keeping track of nnz per row
+	//useful for formats such as LIL
+	int nnz_row[n] = {0};
+
 	for (int x = 0; x < n; x++){
 
 		for (int y = 0; y < m; y++){
@@ -29,12 +45,13 @@ int main() {
 			}
 			if (B[x][y] != 0){
 				
-				
+				nnz_row[x]++;			
 				nnz++;
 
 			}
 		}
 	}
+
 	int pos[n+1] = {0};
 	pos[n] = nnz;
 	int b_crd[nnz];
@@ -43,8 +60,20 @@ int main() {
 	int coo_row[nnz];
 	int coo_col[nnz];
 
+	//LIL represtnation, we have n rows, each row is a list of size = nnz per row
+	//each entry in a row list will be a tuple of (col, val)
+	struct tuple* lil_rows[n];
+	//dynamically allocating the tuples for each row depending on the nnz per row
+	for (int i = 0; i < n; i++){
+
+		lil_rows[i] = (struct tuple*)malloc(sizeof(struct tuple)* nnz_row[i]);
+
+	}
 
 	for (int x = 0 ; x < n; x++) {
+		
+		//pointer to the current row in LIL representation
+		struct tuple* currentRow = lil_rows[x];
 
 		for (int y=0; y<m; y++){
 			
@@ -59,6 +88,13 @@ int main() {
 				//for COO col array, we can use the same b_crd from CSR
 				//(since here we are maintaing order for NNZ values in
 				//COO, while it's not required)
+			
+
+				//LIL representation
+				//Each tuple of the row will have a (col, val) pair	
+				currentRow->col = y;
+				currentRow->val = B[x][y];
+				currentRow++;
 
 					
 				idx++;
@@ -70,6 +106,8 @@ int main() {
 		
 	}
 
+	//CSR related 
+	//Constructing the pos array for CSR
 	int pos_idx = 1;
 	bool row_start_found = false;
 	int lastpos = 0;
@@ -90,6 +128,9 @@ int main() {
 		}
 	}
 
+
+	//Printing out results to visualize all different representations
+	//along with the original dense matrix
 	printf("Matrix B:\n");
 	
 	for (int x = 0; x < n; x++){
@@ -160,6 +201,21 @@ int main() {
 		}
 	}
 
+
+	printf("==========================\n");
+	printf("LIL representation: \n");
+	int ff=0;
+	for (int i = 0 ; i < n ; i++){
+		struct tuple* r = lil_rows[i];
+		printf("row %d:", i);
+		for (int j = 0; j < nnz_row[ff]; j++){
+			printf("(%d,%d)", r->col, r->val);
+			r++;
+		}
+		printf("\n");
+		ff++;
+		lil_rows[i]++;
+	}
 
 
 
