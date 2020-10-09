@@ -1,10 +1,38 @@
+/* By Khaled Abdelaal  khaled.abdelaal@ou.edu
+ *
+ * This program converts dense matrices into 3 popular
+ * spare matrix representations: CSR, COO, and LIL
+ *
+ * Matrix B of size n * m is randomly generated 
+ * range of values in B is between lower and upper
+ * at least 80% of the values of B will be zeros 
+ * to motivate the need for sparse representations
+ *
+ * The dense representation is then converted into :
+ * [1] Compressed Sparse Row: Three arrays are maintained
+ * 		      (a) vals: contains the non-zero values in row order
+ * 		      (b) b_crd: contains column indices for non-zero values
+ * 		      (c) pos: contains the start index for non-zero values for this row in b_crd 
+ *
+ * [2] Coordinate representation: Three arrays are maintained
+ * 		      (a) vals: contains the non-zero values in row order (doesn't have to be
+ * 		      in any order, but to re-use vals from CSR, the assumption here is order)
+ * 		      (b) coo_row: row indices for non-zero vals (from vals)
+ * 		      (c) coo_col: column indices for non-zero vals (from vals)
+ *
+ * [3] List of Lists: Each row is represented as a list of tuples for non-zero values
+ * 		      each tuple consists of column index and the non-zero value
+ *
+ *
+ *
+ *
+*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
 #include <stdbool.h>
 #define n 3
 #define m 3
-#define k 2
 #define lower 0
 #define upper 100
 
@@ -23,8 +51,6 @@ int main() {
 	srand(time(0));
 
 	int B[n][m];
-	int C[m][k];
-	int A[n][k] = {0};
 	int nnz = 0;
 	int idx = 0; 
 	
@@ -32,6 +58,7 @@ int main() {
 	//useful for formats such as LIL
 	int nnz_row[n] = {0};
 
+	//Populating Matrix B with random values
 	for (int x = 0; x < n; x++){
 
 		for (int y = 0; y < m; y++){
