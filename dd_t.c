@@ -1,3 +1,28 @@
+/* By Khaled Abdelaal 	khaled.abdelaal@ou.edu
+ * 
+ * This program performs (dense) matrix multiplication 
+ * C = A * B
+ * Where: A, B, C are n * n dense matrices
+ * 	  
+ *
+ * Multiplication is done in three different variants:
+ * [1] Naive implementation: three nested loops, all data in row-major format
+ * [2] Column-major for B: A in row major while B in col major 
+ * [3] Tiling: a BLOCK_SIZE of n/10 is used for tiling
+ *
+ *
+ * variants 2, and 3 objetive is to exploit cache locality (spatial and temporal)
+ * to improve performance
+ *
+ * A and B are populated with random values,
+ * then each variant is executed NUM_SAMPLES times
+ * average execution time for each variant is captured and printed
+ *
+ *
+ * Program doesn't take any arguments
+ *
+ *
+*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
