@@ -19,12 +19,13 @@
 //	*&nnzColIdx : (in-out) an integer pointer reference to the output COO col indices array
 //	*&nnzVal    : (in-out) a float pointer reference to the output COO float values array
 //	*nnz 	    : (in-out) an integer pointer to the number of non-zeros in the matrix
+//	*nrows 	    : (in-out) an integer pointer to the number of rows
+//	*ncols 	    : (in-out) an integer pointer to the number of columns
 //	filename    : (in)     a string representing filename (file path)
-void loadMTX(int *&nnzRowIdx, int *&nnzColIdx, float *&nnzVal, int* nnz, std::string filename){
+void loadMTX(int *&nnzRowIdx, int *&nnzColIdx, float *&nnzVal, int* nnz, int *nrows, int *ncols,  std::string filename){
 
 	std::cout << "Finding sparsity pattern for " << filename << "....." <<  std::endl;
 	
-	int nrows, ncols;
 	
 	int numValues = 0;
 	int currentLine = 0;
@@ -49,10 +50,10 @@ void loadMTX(int *&nnzRowIdx, int *&nnzColIdx, float *&nnzVal, int* nnz, std::st
 			}else if (currentLine == 1) {
 
 				// Second line contains number of rows, cols, and nnz
-				if (!(iss >> nrows >> ncols >> *nnz)) {break;}
+				if (!(iss >> *nrows >> *ncols >> *nnz)) {break;}
 				
-				std::cout << "number of rows is: " << nrows << std::endl;
-				std::cout << "number of cols is: " << ncols << std::endl;
+				std::cout << "number of rows is: " << *nrows << std::endl;
+				std::cout << "number of cols is: " << *ncols << std::endl;
 				std::cout << "nnz is: " << *nnz << std::endl;	
 				
 				// dynamically allocate memory for COO arrays based on nnz				
@@ -176,7 +177,7 @@ void usage(){
 int main(int argc, char** argv){
 
 	int opt;
-	int nnz;
+	int nnz, nrows, ncols;
 
 	//COO arrays 
 	int* nnzRowIdx;
@@ -201,9 +202,9 @@ int main(int argc, char** argv){
 	
 	// load the MTX file and time the loading process
 	auto load_start_time = std::chrono::high_resolution_clock::now();
-	loadMTX(nnzRowIdx, nnzColIdx, nnzVal, &nnz, filename);
+	loadMTX(nnzRowIdx, nnzColIdx, nnzVal, &nnz, &nrows, &ncols, filename);
 	auto load_end_time = std::chrono::high_resolution_clock::now();
-	
+
 	// generate the full sparsity plot and time the process
 	auto full_start_time = std::chrono::high_resolution_clock::now();
 	fullSparsity(nnz, nnzRowIdx, nnzColIdx, filename);
