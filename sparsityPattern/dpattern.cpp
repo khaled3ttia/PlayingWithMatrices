@@ -517,7 +517,6 @@ int main(int argc, char** argv){
 	int dcols, drows;
 	float nnzRate;	
 
-	// TODO re-adjust command line options 
 	// parse command line arguments
 	while ((opt = getopt(argc, argv, "i:r:n:m:z:hgd")) != -1){
 		switch (opt) {
@@ -601,6 +600,16 @@ int main(int argc, char** argv){
 	bool sampleSparse = loadFile && !generate &&  (!dense) && (sample);
 
 
+	//check if user input is valid
+
+	if (!(sampleLoadDense || fullLoadDense || sampleGenDense || fullGenDense || fullSparse || sampleSparse)){
+
+		usage();
+	}
+
+
+	//Start processing based on the user input
+
 	if (loadFile){
 		
 		//COO arrays 
@@ -642,6 +651,10 @@ int main(int argc, char** argv){
 				std::cout << "COO to Dense converstion duration: " << convert_duration << " nanoseconds\n";
 				std::cout << "Sampling duration: " << sample_duration << " nanoseconds\n";	
 
+
+				delete [] rowsVec;
+				delete [] colsVec;
+
 			}else {
 
 				//Find full sparsity pattern
@@ -656,8 +669,13 @@ int main(int argc, char** argv){
 				std::cout << "File loading duration: " << load_duration << " nanoseconds\n";
 				std::cout << "COO to Dense converstion duration: " << convert_duration << " nanoseconds\n";
 				std::cout << "Full pattern detection duration: " << full_duration << " nanoseconds\n";
+				
+				delete [] rowsVec; 
+				delete [] colsVec;
 			}
+			
 
+			delete [] denseMatrix;
 		}else {
 
 			//sparse
@@ -686,6 +704,11 @@ int main(int argc, char** argv){
 			}
 
 		}
+		
+		delete [] nnzColIdx;
+		delete [] nnzRowIdx;
+		delete [] nnzVal;
+
 	}else {
 
 		//generate
@@ -716,7 +739,8 @@ int main(int argc, char** argv){
 			std::cout << "Matrix generation duration: " << gen_duration << " nanoseconds\n";
 			std::cout << "Sampling duration: " << sample_duration << " nanoseconds\n";
 
-
+			delete [] rowsVec;
+			delete [] colsVec;
 
 
 		}else{
@@ -735,25 +759,11 @@ int main(int argc, char** argv){
 			std::cout << "Matrix generation duration: " << gen_duration << " nanoseconds\n";
 			std::cout << "Full sparsity pattern detection duration: " << full_duration << " nanoseconds\n";
 
-
+			delete [] rowsVec;
+			delete [] colsVec;
 		}
-
+		delete [] denseMatrix;
 
 	}
-	if (!(sampleLoadDense || fullLoadDense || sampleGenDense || fullGenDense || fullSparse || sampleSparse)){
-
-		usage();
-	}
-	
-
-	//freeing allocated memory
-	//delete [] nnzColIdx;
-	//delete [] nnzRowIdx;
-	//delete [] nnzVal;
-
-	/*
-	delete [] denseMatrix;
-	delete [] rowsVec;
-	delete [] colsVec;
-	*/
+		
 }
