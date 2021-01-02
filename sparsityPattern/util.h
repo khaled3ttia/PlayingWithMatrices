@@ -1,4 +1,5 @@
 #include <random>
+#include <iomanip>
 
 void generateMatrix(int nrows, int ncols, float nnzRate, float *&vals){
 	std::random_device rd; 
@@ -82,4 +83,21 @@ void printVector(float *&vec, int size){
 }
 
 
+void printMatrix(float *&denseMatrix, int nrows, int ncols){
+	
+	int numElements = nrows * ncols; 
 
+	for (int i = 0 ; i < numElements; i++){
+
+		
+		std::cout << std::fixed <<  std::setprecision(1)  <<  denseMatrix[i];
+		
+		if ((i+1) % ncols == 0){
+			std::cout << "\n";
+		}else{
+			std::cout << "\t";
+		}
+
+	}
+	
+}

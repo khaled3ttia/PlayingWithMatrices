@@ -698,9 +698,7 @@ int main(int argc, char** argv){
 		
 		std::cout << "Generated Dense Matrix: " << std::endl;
 			
-		//TODO :: print as a 2D matrix ?? 
-		printVector(denseMatrix, drows*dcols);	
-
+		printMatrix(denseMatrix, drows, dcols);
 
 		if (sample){
 						
