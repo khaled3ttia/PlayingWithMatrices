@@ -600,9 +600,9 @@ int main(int argc, char** argv){
 	// - Load MTX, convert into COO and sample
 	bool sampleSparse = loadFile && !generate &&  (!dense) && (sample);
 
-	if (sampleLoadDense) {
-		std::cout << "You chose to load a dense matrix from a MTX file and this sample it" << std::endl;
-			
+
+	if (loadFile){
+		
 		//COO arrays 
 		int* nnzRowIdx;
 		int* nnzColIdx;
@@ -615,202 +615,133 @@ int main(int argc, char** argv){
 		auto load_start_time = std::chrono::high_resolution_clock::now();
 		loadMTX(nnzRowIdx, nnzColIdx, nnzVal, &nnz, &n, &m, filename);
 		auto load_end_time = std::chrono::high_resolution_clock::now();
-		
-		//Convert COO to Dense
-		std::cout << "Converting from COO to Dense format...." << std::endl;
-		float *denseMatrix = new float[n*m]; 
-		auto convert_start = std::chrono::high_resolution_clock::now();
-		cooToDense(nnzRowIdx, nnzColIdx, nnzVal, nnz, n, m, denseMatrix);
-		auto convert_end = std::chrono::high_resolution_clock::now();
-		
-		//Sample Dense 
-		std::cout << "Sampling the dense matrix at a sampling rate of: " << sampleRate * 100 << "%" << std::endl;
-		int *rowsVec = new int[(int)ceil(nnz*sampleRate)];
-		int *colsVec = new int[(int)ceil(nnz*sampleRate)];
-		auto sample_start = std::chrono::high_resolution_clock::now();
-		sampleDense(sampleRate, denseMatrix, n, m, filename);
-		auto sample_end = std::chrono::high_resolution_clock::now();
-
 
 		auto load_duration = std::chrono::duration_cast<std::chrono::nanoseconds>(load_end_time - load_start_time).count();
-		auto convert_duration = std::chrono::duration_cast<std::chrono::nanoseconds>(convert_end - convert_start).count();
-		auto sample_duration = std::chrono::duration_cast<std::chrono::nanoseconds>(sample_end-sample_start).count();
+
+		if (dense){
+
+			//Convert COO to Dense
+			std::cout << "Converting from COO to Dense format...." << std::endl;
+			float *denseMatrix = new float[n*m]; 
+			auto convert_start = std::chrono::high_resolution_clock::now();
+			cooToDense(nnzRowIdx, nnzColIdx, nnzVal, nnz, n, m, denseMatrix);
+			auto convert_end = std::chrono::high_resolution_clock::now();	
+			auto convert_duration = std::chrono::duration_cast<std::chrono::nanoseconds>(convert_end - convert_start).count();
+			
+			if (sample){
+				std::cout << "Sampling the dense matrix at a sampling rate of: " << sampleRate * 100 << "%" << std::endl;
+				int *rowsVec = new int[(int)ceil(nnz*sampleRate)];
+				int *colsVec = new int[(int)ceil(nnz*sampleRate)];
+
+				auto sample_start = std::chrono::high_resolution_clock::now();
+				sampleDense(sampleRate, denseMatrix, n, m, filename);
+				auto sample_end = std::chrono::high_resolution_clock::now();
+				auto sample_duration = std::chrono::duration_cast<std::chrono::nanoseconds>(sample_end-sample_start).count();
 		
-		std::cout << "File loading duration: " << load_duration << " nanoseconds\n";
-		std::cout << "COO to Dense converstion duration: " << convert_duration << " nanoseconds\n";
-		std::cout << "Sampling duration: " << sample_duration << " nanoseconds\n";	
-	}
+				std::cout << "File loading duration: " << load_duration << " nanoseconds\n";
+				std::cout << "COO to Dense converstion duration: " << convert_duration << " nanoseconds\n";
+				std::cout << "Sampling duration: " << sample_duration << " nanoseconds\n";	
 
-	if (fullLoadDense) {
-		std::cout << "You chose to load a dense matrix from a MTX file and find its full sparsity (no sampling)" << std::endl;
+			}else {
+
+				//Find full sparsity pattern
+				int *rowsVec = new int[nnz];
+				int *colsVec = new int[nnz];
+
+				auto full_start = std::chrono::high_resolution_clock::now();
+				fullDense(denseMatrix, rowsVec, colsVec, n, m, filename);
+				auto full_end = std::chrono::high_resolution_clock::now();
+				auto full_duration = std::chrono::duration_cast<std::chrono::nanoseconds>(full_end-full_start).count();
 		
-		//COO arrays 
-		int* nnzRowIdx;
-		int* nnzColIdx;
-		float* nnzVal;
-		// --end of COO arrays
-		
-		int n, m, nnz; 
+				std::cout << "File loading duration: " << load_duration << " nanoseconds\n";
+				std::cout << "COO to Dense converstion duration: " << convert_duration << " nanoseconds\n";
+				std::cout << "Full pattern detection duration: " << full_duration << " nanoseconds\n";
+			}
 
-		//Load 
-		auto load_start_time = std::chrono::high_resolution_clock::now();
-		loadMTX(nnzRowIdx, nnzColIdx, nnzVal, &nnz, &n, &m, filename);
-		auto load_end_time = std::chrono::high_resolution_clock::now();
+		}else {
 
-		//Convert COO to Dense 
-		std::cout << "Converting from COO to Dense Format...." << std::endl;
-		float *denseMatrix = new float[n*m]; 
-		auto convert_start = std::chrono::high_resolution_clock::now();
-		cooToDense(nnzRowIdx, nnzColIdx, nnzVal, nnz, n, m, denseMatrix);
-		auto convert_end = std::chrono::high_resolution_clock::now();
-		
-		//Find full sparsity pattern
-		int *rowsVec = new int[nnz];
-		int *colsVec = new int[nnz];
-		auto full_start = std::chrono::high_resolution_clock::now();
-		fullDense(denseMatrix, rowsVec, colsVec, n, m, filename);
-		auto full_end = std::chrono::high_resolution_clock::now();
-	
-		auto load_duration = std::chrono::duration_cast<std::chrono::nanoseconds>(load_end_time - load_start_time).count();
-		auto convert_duration = std::chrono::duration_cast<std::chrono::nanoseconds>(convert_end - convert_start).count();
-		auto full_duration = std::chrono::duration_cast<std::chrono::nanoseconds>(full_end-full_start).count();
-		
-		std::cout << "File loading duration: " << load_duration << " nanoseconds\n";
-		std::cout << "COO to Dense converstion duration: " << convert_duration << " nanoseconds\n";
-		std::cout << "Full pattern detection duration: " << full_duration << " nanoseconds\n";
+			//sparse
+			if (sample){
+				auto sample_start = std::chrono::high_resolution_clock::now();
+				sampleSparsity(sampleRate, nnzRowIdx, nnzColIdx, nnz, n, m, filename);
+				auto sample_end = std::chrono::high_resolution_clock::now();
+				auto sample_duration = std::chrono::duration_cast<std::chrono::nanoseconds>(sample_end - sample_start).count();
 
-	
-	}
+				std::cout << "File loading duration: " << load_duration << " nanoseconds\n";
+				std::cout << "Sampling duration: " << sample_duration << " nanoseconds\n";
 
-	if (sampleGenDense) {
+			}else{
+				//Full sparsity pattern
+				auto full_start = std::chrono::high_resolution_clock::now();
+				fullSparsity(nnz, n, m, nnzRowIdx, nnzColIdx, filename);
+				auto full_end = std::chrono::high_resolution_clock::now();
 
-		std::cout << "You chose to generate a dense matrix, and sample it" << std::endl;
+				auto full_duration = std::chrono::duration_cast<std::chrono::nanoseconds>(full_end - full_start).count();
 
-		std::cout << "Generating a random matrix of " << drows << " rows and " << dcols << " columns" << std::endl;
-		std::cout << "with a non-zero rate of " << nnzRate * 100 << "%" << std::endl;
+				std::cout << "File loading duration: " << load_duration << " nanoseconds\n";
+				std::cout << "Full sparsity duration: " << full_duration << " nanoseconds\n";
 
-		//Generate a matrix
+
+
+			}
+
+		}
+	}else {
+
+		//generate
 		float *denseMatrix = new float[drows*dcols]; 
 		auto gen_start = std::chrono::high_resolution_clock::now();
 		generateMatrix(drows, dcols, nnzRate, denseMatrix);
 		auto gen_end = std::chrono::high_resolution_clock::now();
-
-		std::cout << "Generated Dense Matrix: " << std::endl;
 		
+		auto gen_duration = std::chrono::duration_cast<std::chrono::nanoseconds>(gen_end - gen_start).count();
+		
+		std::cout << "Generated Dense Matrix: " << std::endl;
+			
 		//TODO :: print as a 2D matrix ?? 
 		printVector(denseMatrix, drows*dcols);	
 
+
+		if (sample){
+						
+			int *rowsVec = new int[(int)ceil(sampleRate*nnzRate*drows*dcols)];
+			int *colsVec = new int[(int)ceil(sampleRate*nnzRate*drows*dcols)];
+			
+			//Sample matrix
+			std::cout << "Sampling matrix with a sampling rate of: " << sampleRate * 100 << "%" << std::endl;
+			auto sample_start = std::chrono::high_resolution_clock::now();
+			sampleDense(sampleRate, denseMatrix, drows, dcols, "Dense_mat");
+			auto sample_end = std::chrono::high_resolution_clock::now();
+
+			auto sample_duration = std::chrono::duration_cast<std::chrono::nanoseconds>(sample_end-sample_start).count();
+			
+			std::cout << "Matrix generation duration: " << gen_duration << " nanoseconds\n";
+			std::cout << "Sampling duration: " << sample_duration << " nanoseconds\n";
+
+
+
+
+		}else{
+
+
+			int *rowsVec = new int[(int)ceil(sampleRate*nnzRate*drows*dcols)];
+			int *colsVec = new int[(int)ceil(sampleRate*nnzRate*drows*dcols)];
+			
+			//Full sparsity pattern
+			auto full_start = std::chrono::high_resolution_clock::now();
+			fullDense(denseMatrix, rowsVec, colsVec, drows, dcols, "Dense_mat");
+			auto full_end = std::chrono::high_resolution_clock::now();
 		
-		int *rowsVec = new int[(int)ceil(sampleRate*nnzRate*drows*dcols)];
-		int *colsVec = new int[(int)ceil(sampleRate*nnzRate*drows*dcols)];
-		
-		//Sample matrix
-		std::cout << "Sampling matrix with a sampling rate of: " << sampleRate * 100 << "%" << std::endl;
-		auto sample_start = std::chrono::high_resolution_clock::now();
-		sampleDense(sampleRate, denseMatrix, drows, dcols, "Dense_mat");
-		auto sample_end = std::chrono::high_resolution_clock::now();
+			auto full_duration = std::chrono::duration_cast<std::chrono::nanoseconds>(full_end-full_start).count();
+			
+			std::cout << "Matrix generation duration: " << gen_duration << " nanoseconds\n";
+			std::cout << "Full sparsity pattern detection duration: " << full_duration << " nanoseconds\n";
 
-		auto gen_duration = std::chrono::duration_cast<std::chrono::nanoseconds>(gen_end - gen_start).count();
-		auto sample_duration = std::chrono::duration_cast<std::chrono::nanoseconds>(sample_end-sample_start).count();
-		
-		std::cout << "Matrix generation duration: " << gen_duration << " nanoseconds\n";
-		std::cout << "Sampling duration: " << sample_duration << " nanoseconds\n";
 
-	
-	}
+		}
 
-	if (fullGenDense) {
-
-		std::cout << "You chose to generate a dense matrix, and find its full sparsity (no sampling)" << std::endl;
-
-	
-		std::cout << "Generating a random matrix of " << drows << " rows and " << dcols << " columns" << std::endl;
-		std::cout << "with a non-zero rate of " << nnzRate * 100 << "%" << std::endl;
-
-		//Generate a matrix	
-		float *denseMatrix = new float[drows*dcols]; 
-		auto gen_start = std::chrono::high_resolution_clock::now();
-		generateMatrix(drows, dcols, nnzRate, denseMatrix);
-		auto gen_end = std::chrono::high_resolution_clock::now();
-
-		std::cout << "Generated Dense Matrix: " << std::endl;
-		//TODO :: print as a 2D matrix ??
-		printVector(denseMatrix, drows*dcols);	
-
-		
-		int *rowsVec = new int[(int)ceil(sampleRate*nnzRate*drows*dcols)];
-		int *colsVec = new int[(int)ceil(sampleRate*nnzRate*drows*dcols)];
-		
-		//Full sparsity pattern
-		auto full_start = std::chrono::high_resolution_clock::now();
-		fullDense(denseMatrix, rowsVec, colsVec, drows, dcols, "Dense_mat");
-		auto full_end = std::chrono::high_resolution_clock::now();
-	
-		auto gen_duration = std::chrono::duration_cast<std::chrono::nanoseconds>(gen_end - gen_start).count();
-		auto full_duration = std::chrono::duration_cast<std::chrono::nanoseconds>(full_end-full_start).count();
-		
-		std::cout << "Matrix generation duration: " << gen_duration << " nanoseconds\n";
-		std::cout << "Full sparsity pattern detection duration: " << full_duration << " nanoseconds\n";
 
 	}
-
-	if (fullSparse) {
-		std::cout << "You chose to load a COO matrix from a MTX file, and find its full sparsity (no sampling)" << std::endl;
-		
-		//COO arrays 
-		int* nnzRowIdx;
-		int* nnzColIdx;
-		float* nnzVal;
-		// --end of COO arrays
-		
-		int n, m, nnz; 
-
-		//Load as COO
-		auto load_start = std::chrono::high_resolution_clock::now();
-		loadMTX(nnzRowIdx, nnzColIdx, nnzVal, &nnz, &n, &m, filename);
-		auto load_end = std::chrono::high_resolution_clock::now();
-
-		//Full sparsity pattern
-		auto full_start = std::chrono::high_resolution_clock::now();
-		fullSparsity(nnz, n, m, nnzRowIdx, nnzColIdx, filename);
-		auto full_end = std::chrono::high_resolution_clock::now();
-
-		auto load_duration = std::chrono::duration_cast<std::chrono::nanoseconds>(load_end - load_start).count();
-		auto full_duration = std::chrono::duration_cast<std::chrono::nanoseconds>(full_end - full_start).count();
-
-		std::cout << "File loading duration: " << load_duration << " nanoseconds\n";
-		std::cout << "Full sparsity duration: " << full_duration << " nanoseconds\n";
-
-	}
-
-	if (sampleSparse){
-		std::cout << "You chose to load a COO matrix from a MTX file, and sample it" << std::endl;
-		//COO arrays 
-		int* nnzRowIdx;
-		int* nnzColIdx;
-		float* nnzVal;
-		// --end of COO arrays
-		
-		int n, m, nnz; 
-
-		//Load as COO
-		auto load_start = std::chrono::high_resolution_clock::now();
-		loadMTX(nnzRowIdx, nnzColIdx, nnzVal, &nnz, &n, &m, filename);
-		auto load_end = std::chrono::high_resolution_clock::now();
-
-		//Full sparsity pattern
-		auto sample_start = std::chrono::high_resolution_clock::now();
-		sampleSparsity(sampleRate, nnzRowIdx, nnzColIdx, nnz, n, m, filename);
-		auto sample_end = std::chrono::high_resolution_clock::now();
-
-		auto load_duration = std::chrono::duration_cast<std::chrono::nanoseconds>(load_end - load_start).count();
-		auto sample_duration = std::chrono::duration_cast<std::chrono::nanoseconds>(sample_end - sample_start).count();
-
-		std::cout << "File loading duration: " << load_duration << " nanoseconds\n";
-		std::cout << "Sampling duration: " << sample_duration << " nanoseconds\n";
-
-	}
-
 	if (!(sampleLoadDense || fullLoadDense || sampleGenDense || fullGenDense || fullSparse || sampleSparse)){
 
 		usage();
