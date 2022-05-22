@@ -16,6 +16,28 @@
 #include <queue>
 #include "search.h"
 #include "util.h"
+#include <map>
+
+struct denseComp {
+	
+	int row_start;
+	int row_end;
+	int col_start;
+	int col_end;
+	
+	/*	
+	int coo_start_idx;
+	int coo_end_idx;
+	*/
+
+};
+
+struct verticalComp {
+	int row_start;
+	int row_end;
+
+};
+
 
 //functions prototypes
 //TODO: finish all function prototypes
@@ -366,6 +388,227 @@ void sampleSparsity(float sampleRate, int *&nnzRowIdx, int *&nnzColIdx, int nnz,
 
 }
 
+// Idea 1, take a point and look into all directions
+// NOT COMPLETE
+/*
+void dosample(int *&nnzRowIdx, int *&nnzColIdx, int nnz, int nrows, int ncols, std::string filename){
+	
+	//A vector holding info about dense components
+	std::vector<denseComp> components;
+	
+	int row_idx_coo = 0;	
+
+
+	int row_idx_real = nnzRowIdx[row_idx_coo];
+	int col_idx_real = nnzColIdx[row_idx_coo];
+	
+	int no_comps = 0; 
+
+
+	//TODO make a parameter
+	int minCompSize = 2;
+
+	std::cout << "Starting with point ( " << row_idx_real << ", " << col_idx_real << " ) ....." << std::endl;
+
+
+	//right direction
+	//We need to find if row_idx, col_idx+1 is a non-zero
+	//if that is true, we continue finding row_idx, col_idx + 1 + 1 +.... 
+	//until the value is a zero or we exceed the bound of the number of columns
+
+	int right_step = 1; 
+	int right_col_real = col_idx_real + right_step;
+
+	int last_right_coo_idx = -1;
+	// not needed for now
+	//bool rightIsNNZ = true;
+	int nnzRight = 0; 
+
+	int row_start_real = row_idx_real;
+	int row_end_real = row_idx_real;
+	int col_start_real = col_idx_real;
+	int col_end_real = col_idx_real;
+	//Exploring right direction .....
+	while (right_col_real < ncols - 1){
+
+			
+		bool rightDone = false;
+	
+
+		//Can we find a point row_idx, right_col which is a NNZ?	
+		
+		
+		std::vector<int> searchResults; 
+		size_t resultSize;
+		
+		findAllOccurances(nnzColIdx, 0, nnz-1, right_col_real, searchResults, resultSize);
+
+		for (int i = 0; i < resultSize; i++){
+			
+			int right_col_coo = searchResults[i];
+
+			int right_row_real = nnzRowIdx[right_col_coo];
+			if (right_row_real == row_idx_real){
+				rightDone = true; 
+				nnzRight++;
+				last_right_coo_idx = right_col_coo;
+				break;
+			}
+
+		}		
+	
+
+		if (rightDone){
+			//This means we were able to find a nnz at that point (row, right_col)
+			right_step = 1;
+			std::cout << "Found a NNZ at (" << row_idx_real << ", " << right_col_real << ")!" << std::endl;
+			std::cout << "looking for more nnz at this direction ..... " << std::endl;
+ 
+
+		}else{ 
+			
+			std::cout << "Couldn't find a nnz at (" << row_idx_real << ", " << right_col_real << ")!" << std::endl;
+			std::cout << "Doubling column step to explore another neighborhood" << std::endl;
+			//Double the step, looks like this neighborhood doesn't have non-zeros
+			right_step *= 2;
+
+			//save the dense component info 
+			if (nnzRight >= minCompSize){
+				
+				
+				components.push_back({row_idx_coo,last_right_coo_idx});
+				
+				//no_comps++;
+
+			}
+	
+			//Reset the counter for the number of nnz
+			nnzRight = 0;
+		}
+
+		right_col_real += right_step;
+	
+	}
+
+	
+	std::cout << "Number of components found : " << components.size() << std::endl;
+	std::cout << "Component 1: " << std::endl;
+	std::cout << "coo_start: " << components[0].coo_start_idx << std::endl;
+	std::cout << "coo_end: " << components[0].coo_end_idx << std::endl;
+	
+	std::cout << "real_row_start: " << nnzRowIdx[components[0].coo_start_idx] << std::endl;
+	std::cout << "real_row_end: " << nnzRowIdx[components[0].coo_end_idx] << std::endl;
+
+	std::cout << "real_col_start: " << nnzColIdx[components[0].coo_start_idx] << std::endl;
+	std::cout << "real_col_end: " << nnzColIdx[components[0].coo_end_idx] << std::endl;	
+
+}
+*/
+
+void dosample(int *&nnzRowIdx, int *&nnzColIdx, int nnz, int nrows, int ncols, std::string filename){
+	
+	//std::vector<denseComp> components;
+	std::map<int, std::vector<verticalComp>> components;
+
+	int j = 1; 
+	for (int i = 0; i < nnz; i++){
+
+		int colIdxVal = nnzColIdx[i];
+		int rowIdxVal = nnzRowIdx[i];
+
+		
+		int currentColIdxVal = nnzColIdx[j];
+
+		int lastRowIdxVal = rowIdxVal;
+ 
+		while (currentColIdxVal == colIdxVal){
+
+			bool pushedComp = false;
+
+			int currentRowIdxVal = nnzRowIdx[j];
+			
+			int distanceToLastRow = currentRowIdxVal - lastRowIdxVal;
+			if (distanceToLastRow > 1){
+
+				//components.push_back({rowIdxVal, lastRowIdxVal, colIdxVal, currentColIdxVal});
+				components[colIdxVal].push_back({rowIdxVal, lastRowIdxVal});
+				rowIdxVal = currentRowIdxVal;
+				pushedComp = true;
+			}
+			
+			j++;
+			currentColIdxVal = nnzColIdx[j];
+			lastRowIdxVal = currentRowIdxVal;
+			if (currentColIdxVal != colIdxVal){
+				if (pushedComp){
+					components[colIdxVal].push_back({currentRowIdxVal, currentRowIdxVal});
+					//components.push_back({currentRowIdxVal, currentRowIdxVal, colIdxVal, colIdxVal});
+					lastRowIdxVal = nnzRowIdx[j];
+
+				}
+
+			}
+			
+			
+			
+		}
+		
+	}
+	
+	std::cout << "Number of components found: " << components.size() << std::endl;
+	std::cout << "row_start:row_end:col_start:col_end" << std::endl;
+	
+	//for (auto comp : components){
+	//		
+	//	std::cout << comp.row_start <<"\t:" <<  comp.row_end  << "\t:" << comp.col_start << "\t:" << comp.col_end << std::endl;
+	//}
+	
+
+	for (auto const& entry : components){
+		
+		std::cout << "Column " <<  entry.first << std::endl;
+		
+		std::cout << "start_row: end_row" << std::endl; 
+		for (auto comp : entry.second){
+			std::cout << comp.row_start <<"\t:\t" << comp.row_end << std::endl;
+		}
+
+	}
+
+	
+	// At this point, we already have the vertical components
+	// need to stitch them together to find overall components;
+	/*
+	auto firstColComps = components[0];
+	for (auto comp : firstColComps){
+		int compStart = comp.row_start;
+		int compEnd = comp.row_end;
+		int length = compEnd - compStart; 
+
+		if (components.find(1) == components.end()){
+			std::cout << "Next column doesn't have any comps :(" << std::endl;
+
+		}else{
+			for (auto nextColComp : components[1]){
+				int nextColStart = nextColComp.row_start;
+				int nextColEnd = nextColComp.row_end;
+				int nextColLength = nextColEnd - nextColStart;
+
+				if (nextColLength == 0 ){
+					if (nextColStart == compStart || nextColStart == compEnd){
+
+						std::cout << "Found a matching single element in the next column" << std::endl;	
+					}
+
+				}
+				
+
+			}
+		}
+
+	}
+	*/	
+}
 
 void fullDense(float *&denseMatrix, int *&rows, int *&cols, int nrows, int ncols, std::string filename){
 	
@@ -681,7 +924,8 @@ int main(int argc, char** argv){
 			//sparse
 			if (sample){
 				auto sample_start = std::chrono::high_resolution_clock::now();
-				sampleSparsity(sampleRate, nnzRowIdx, nnzColIdx, nnz, n, m, filename);
+				//sampleSparsity(sampleRate, nnzRowIdx, nnzColIdx, nnz, n, m, filename);
+				dosample(nnzRowIdx, nnzColIdx, nnz, n, m, filename);
 				auto sample_end = std::chrono::high_resolution_clock::now();
 				auto sample_duration = std::chrono::duration_cast<std::chrono::nanoseconds>(sample_end - sample_start).count();
 
