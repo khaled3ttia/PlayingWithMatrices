@@ -24,3 +24,18 @@ int binarySearch(std::vector<int> &searchArray, int start, int end, int value){
 
 
 }
+
+void findAllOccurances(int *&searchArray, int start, int end, int value, std::vector<int> &result, size_t &resultSize){
+
+	for (int i = start; i <= end; i++){
+
+		if (searchArray[i] == value){
+			
+			result.push_back(i);
+
+		}
+
+	}
+	
+	resultSize = result.size();
+}
